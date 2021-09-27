@@ -5,20 +5,25 @@ module.exports = mongoose => {
         mongoose.Schema({
             firstName: { 
                 type: String, 
-                required: true
+                required: true,
              },
             lastName: String,
             email: { 
                 type: String, 
                 unique: true,
                  required: true,
-                  dropDups: true },
+                  dropDups: true
+                 },
             password: {
                  type: String, 
-                 required: true },
+                 required: true,
+                 min: 8,
+                 max:50, 
+                },
             contactno: {
-                type: String,
+                type: Number,
                 required: true,
+                max: 10,
             },
             role: {
                 type: String,

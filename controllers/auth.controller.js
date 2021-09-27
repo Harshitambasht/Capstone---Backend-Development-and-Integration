@@ -42,18 +42,6 @@ const hashPassword = bcrypt.hashSync(req.body.password, salt)
           isAdmin : true,   
         });
 
-        // Save User in the database
-        // user
-        //   .save(user)
-        //   .then(data => {
-        //     res.send(data);
-        //   })
-        //   .catch(err => {
-        //     res.status(500).send({
-        //       message:
-        //         err.message || "Some error occurred, please try again later."
-        //     });
-        //   });
         user.save((err, user) => {
           if (err)
             return res.status("400").send(err.message || "some error occurred");      
@@ -103,9 +91,9 @@ exports.login = (req, res) => {
 
               const token = jwt.sign({_id: data.id}, "myprivatekey");
               data.token=token;
-
-              //Sending the response back to user
-              res.send(data);
+              data.isAuthenticated = true;
+      const secret={email:data.email,name:data.firstName+" "+data.lastName,isAuthenticated:data.isAuthenticated}           
+      res.send(secret);
             }
           })
           .catch(err => {

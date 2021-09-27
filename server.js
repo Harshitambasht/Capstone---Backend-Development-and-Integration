@@ -1,5 +1,6 @@
 const express = require("express");
 const DB_URL = require("./config/db.config");
+const { address } = require("./controllers/address.controller");
 const {signUp,login} = require("./controllers/auth.controller");
 const db  = require("./models/index");
 const app = express();
@@ -17,6 +18,7 @@ app.get("/",(req,res)=>{
 
 app.post("/users",signUp);
 app.post("/auth",login);
+app.post("/addresses", address);
 
 app.listen(port,()=>{
     console.log(port);
