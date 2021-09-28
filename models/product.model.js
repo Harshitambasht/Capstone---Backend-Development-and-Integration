@@ -23,7 +23,6 @@ let productSchema = new mongoose.Schema({
     availableItems: {
         type:Number,
     },
-   
     imageURL: {
         type: String,
     },
