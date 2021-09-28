@@ -1,141 +1,116 @@
-const db = require("./../models");
-const User = db.users;
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
+const Users = require("./../models/user.model");
+const validator = require("validator");
+const bcrypt = require("bcrypt");
+const saltRounds = 12;
+const salt = bcrypt.genSaltSync(saltRounds);
+const jwt=require("jsonwebtoken");
 
-// Create and Save a user
-exports.signUp = (req, res) => {
-    // Validate request
-    if (!req.body.email && !req.body.password) {
-      res.status(400).send({ message: "Please provide email and password to continue." });
-      return;
-    }
+  function signUp(req,res) {
+      
+    const {
+      email,
+      firstName,
+      lastName,
+      contactNumber,
+      password
+    } = req.body
+    parts = email.split("@");
+    domain = parts[1].split(".");
+   // console.log(email,parts,domain);
 
-    const email = req.body.email;
-  
-    if (email == 'admin1@upgrad.com' || email == 'admin2@upgrad.com') {
-      res.status(400).send({ message: "Sorry, You cannot register as ADMIN." });
-      return;
-    }
-
-    const filter = { email: email };
-
-    //Find user based on the email provided in API req 
-    User.findOne(filter, (err, user)=>{
-     
-      if(err || user === null){
-        //If not found
-
-//Encrypt the password
-
-const salt = bcrypt.genSaltSync(10)
-const hashPassword = bcrypt.hashSync(req.body.password, salt)
-
-        // Create a User
-        const user = new User({
-          firstName: req.body.firstName, 
-          lastName: req.body.lastName,
-          contactno: req.body.contactno,
-          email: email,
-          password: hashPassword,
-          role: req.body.role ? req.body.role : 'user',
-          isAdmin : true,   
-        });
-
-        user.save((err, user) => {
-          if (err)
-            return res.status("400").send(err.message || "some error occurred");      
-          res.status(200).send(user);
-        });
-      }else {//User found with same email
-        res.status(400).send({
-          message: "Try any other email, this email is already registered!"
-        });
-      }
+    const newUser = new Users({
+      password :bcrypt.hashSync(password,salt),
+      email:email,
+      firstName,
+      lastName,
+      contactNumber,
+      
+      
       
     });
+      
+    //----How bycrypt works-----
+    // // const password = req.body.password;
+    // // const hash = bcrypt.hashSync((password), salt);
+    // // console.log(hash);    // hash = encrypted password
 
-  };
+    // email validation       1.regex     2.length
+    var isEmail = function(str) {
+        return typeof str==='string' && /[a-zA-Z0-9.-]+[@]+[a-zA-Z0-9.-]+[.]+[a-z]/g.test(str);
+      }
 
-// Retrieve user using the email provided in the req parameter.
-// Validate user by matching the password provided in the req parameter.
-exports.login = (req, res) => {
-    const email = req.body.email;
-    const password = req.body.password;
 
-    // Validate request
-    if (!email && !password) {
-      res.status(400).send({ message: "Please provide email and password to continue." });
-      return;
-    }
-
-    const filter = { email: email };
-    User.findOne(filter, (err, user)=>{
-     
-      if(err || user === null){
-        res.status(401).send({
-          //better message wrt security. Prevents brute force attacks
-          message: "Email or password not correct."
-        });
-      }else {
-        if(bcrypt.compareSync(password, user.password)){
-          user.isLoggedIn = true;
-            
-          User.findOneAndUpdate(filter, user, { useFindAndModify: false })
-          .then(data => {
-            if (!data) {
-              res.status(404).send({
-                message: "This email has not been registered!"
-              });
-            } else{          
-
-              const token = jwt.sign({_id: data.id}, "myprivatekey");
-              data.token=token;
-              data.isAuthenticated = true;
-      const secret={email:data.email,name:data.firstName+" "+data.lastName,isAuthenticated:data.isAuthenticated}           
-      res.send(secret);
-            }
-          })
-          .catch(err => {
-            res.status(500).send({
-              message: "Error updating."
-            });
-          });
-
-        }else{
-          res.status(401).send({
-            message: "Invalid Credentials!"
-          });
+    const inValid = function(){
+        if(parts[0].length <1|| domain[0].length <1){
+          return true;
         }
+       if(domain[1].length<2 || domain[1].length>=7) return true;
       }
+
       
-    });
+      if(!isEmail(email)){
+      res.status(400).send("Invalid email-id format!")}
 
-  };
+      // contact number validation
+      if(!validator.isMobilePhone(req.body.contactNumber) || (req.body.contactNumber).length !== 10){
+           res.status(400).send("Invalid contact number!");
+           }
 
-// Update isLoggedIn parameter of a User.
-exports.logout = (req, res) => {
+      else if(inValid()){
+      res.status(400).send("Invalid email-id format!");}
+      
+      else{
+      Users.findOne({ email: email }, (err, user) => {
+        if (err || user === null) {
 
-  // Validate request
-  if (!req.body.id) {
-    res.status(400).send({ message: "Please provide user Id." });
-    return;
+        // if user not exist
+          newUser.save((err, user) => {
+            if (err)
+              return res.status("400").send(err.message || "some error occurred");
+            
+              
+            res.status(200).send(user);
+          });
+        } else {
+          // email exists in db
+          res.status(400).send("Try any other email, this email is already registered!");
+        }
+      })
+}
+
+
   }
 
-  const id = req.body.id;
-  const update = { isLoggedIn: false };
-
-  User.findByIdAndUpdate(id, update)
-    .then(data => {
-      if (!data) {
-        res.status(404).send({
-          message: "Some error occurred, please try again later."
-        });
-      } else res.send({ message: "Logged Out successfully." });
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Error updating."
+  function login(req,res) {
+    const email = req.body.email;
+    const password = req.body.password;
+    const filter = {$and:[{email:email},{password:password}]};
+   
+ 
+  Users.findOneAndUpdate(filter, { useFindAndModify: false })
+  .then(data => {
+    if (!data) {
+      res.status(404).send({
+        message: "This email has not been registered!"
       });
+    } else{          
+     
+      const token = jwt.sign({_id: data.id}, "myprivatekey");
+     data.token=token;
+      data.isAuthenticated = true;
+      const secret={email:data.email,name:data.firstName+" "+data.lastName,isAuthenticated:data.isAuthenticated}           
+     res.send(secret);
+    }
+  })
+  .catch(err => {
+    res.status(500).send({
+      message: "Error updating."
     });
-};
+  });
+}
+
+
+
+  
+
+module.exports = {signUp,login};

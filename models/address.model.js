@@ -7,7 +7,7 @@ let addressSchema = new mongoose.Schema({
     },
     contactNumber: {
         type: Number,
-        max:10,
+        min:10,
         required:true,
     },
     street: {
@@ -31,11 +31,10 @@ let addressSchema = new mongoose.Schema({
     zipcode: {
         type: Number,
         min:6,
-        max:10,
         required:true,
     },
     user: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Object,
     },
 
 

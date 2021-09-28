@@ -2,6 +2,8 @@ const express = require("express");
 const DB_URL = require("./config/db.config");
 const { address } = require("./controllers/address.controller");
 const {signUp,login} = require("./controllers/auth.controller");
+const { Product } = require("./controllers/product.controller");
+const auth = require("./middleware/auth");
 const db  = require("./models/index");
 const app = express();
 body_parser = require("body-parser");
@@ -17,8 +19,9 @@ app.get("/",(req,res)=>{
 })
 
 app.post("/users",signUp);
-app.post("/auth",login);
-app.post("/addresses", address);
+app.post("/auth",auth,login);
+app.post("/addresses",auth, address);
+app.post("/products", Product);
 
 app.listen(port,()=>{
     console.log(port);
